@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Sign Up</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            font: 14px sans-serif;
+        }
+
+        .wrapper {
+            width: 360px;
+            padding: 20px;
+        }
+
+        /* Password strength indicator styles */
+        #passwordStrengthContainer {
+            margin-top: 10px;
+            width: 100%;
+        }
+
+        #passwordStrength {
+            height: 10px;
+            width: 100%;
+            background-color: lightgray;
+            border-radius: 5px;
+            transition: width 0.3s ease, background-color 0.3s ease; /* Add transition for smoother color and width change */
+        }
+
+        .strength-bar {
+            height: 100%;
+            border-radius: 5px;
+        }
+
+        .very-weak {
+            background-color: red;
+        }
+
+        .weak {
+            background-color: orange;
+        }
+
+        .medium {
+            background-color: yellow;
+        }
+
+        .strong {
+            background-color: lightgreen;
+        }
+
+        .very-strong {
+            background-color: green;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="ssoComponent"></div>
+    <script src="/SSO/client/src/App.js"></script>
+    <div class="wrapper">
+        <h2>Sign Up</h2>
+        <p>Please fill this form to create an account.</p>
+    
+            <div class="form-group">
+                <label>Username</label>
+                <input type="text" name="username" id="username" class="form-control">
+                <span id="usernameErr" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" name="password" id="password" class="form-control">
+                <!-- Password strength indicator -->
+                <div id="passwordStrengthContainer">
+                    <div id="passwordStrength" class="strength-bar"></div>
+                </div>
+                <span id="passwordStrengthText"></span> <!-- Text description of password strength -->
+                <span id="passwordErr" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <ul>
+                    <li><input type="checkbox" id="lowercaseCheck"> มีตัวอักษรเล็ก (a-z)</li>
+                    <li><input type="checkbox" id="uppercaseCheck"> มีตัวอักษรใหญ่ (A-Z)</li>
+                    <li><input type="checkbox" id="numberCheck"> มีตัวเลข (0-9)</li>
+                    <li><input type="checkbox" id="lengthCheck"> มีความยาวมากกว่า 8 ตัวอักษร</li>
+                </ul>
+            </div>
+
+            <div class="form-group">
+                <label>Confirm Password</label>
+                <input type="password" name="confirm_password" id="confirm_password" class="form-control">
+                <span id="confirmPasswordErr" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <input type="submit" class="btn btn-primary" value="Submit">
+                <input type="reset" class="btn btn-secondary ml-2" value="Reset">
+            </div>
+            <p>Already have an account? <a href="login.php">Login here</a>.</p>
+        </form>
+    </div>
+
+    <!-- Include the zxcvbn library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/zxcvbn/4.4.2/zxcvbn.js"></script>
+
+    <script>
+        document.getElementById('username').addEventListener('input', function () {
+            var username = this.value;
+            var usernameErr = document.getElementById('usernameErr');
+        });
+
+        function checkPassword() {
+            var password = document.getElementById('password').value.trim();
+            var passwordErr = document.getElementById('passwordErr');
+            var passwordStrengthText = document.getElementById('passwordStrengthText');
+            var checkboxes = document.querySelectorAll('input[type="checkbox"]');
+            var isValid = true;
+
+            if (password === "") {
+                passwordErr.textContent = "";
+                checkboxes.forEach(function (checkbox) {
+                    checkbox.checked = false; // uncheck all checkboxes
+                });
+            } else if (password.length < 6) {
+                passwordErr.textContent = "Password must have at least 6 characters.";
+                isValid = false;
+            } else {
+                passwordErr.textContent = "";
+                checkboxes[0].checked = /[a-z]/.test(password);
+                checkboxes[1].checked = /[A-Z]/.test(password);
+                checkboxes[2].checked = /\d/.test(password);
+                checkboxes[3].checked = /^(?=.*[a-zA-Z\d]).{8,}$/.test(password);
+            }
+
+            // Update password strength indicator
+            var result = zxcvbn(password);
+            var progressBar = document.getElementById('passwordStrength');
+
+            // Set width and change background color according to the strength level
+            if (result.score === 0) {
+                progressBar.style.width = '20%';
+                progressBar.style.backgroundColor = 'red';
+                passwordStrengthText.textContent = 'Password Strength: Very Weak';
+            } else if (result.score === 1) {
+                progressBar.style.width = '40%';
+                progressBar.style.backgroundColor = 'orange';
+                passwordStrengthText.textContent = 'Password Strength: Weak';
+            } else if (result.score === 2) {
+                progressBar.style.width = '60%';
+                progressBar.style.backgroundColor = 'yellow';
+                passwordStrengthText.textContent = 'Password Strength: Medium';
+            } else if (result.score === 3) {
+                progressBar.style.width = '80%';
+                progressBar.style.backgroundColor = 'lightgreen';
+                passwordStrengthText.textContent = 'Password Strength: Strong';
+            } else if (result.score === 4) {
+                progressBar.style.width = '100%';
+                progressBar.style.backgroundColor = 'green';
+                passwordStrengthText.textContent = 'Password Strength: Very Strong';
+            }
+
+            return isValid;
+        }
+
+        document.getElementById('password').addEventListener('input', function () {
+            checkPassword();
+        });
+
+        document.getElementById('signupForm').addEventListener('submit', function (event) {
+            if (!checkPassword()) {
+                event.preventDefault();
+            }
+        });
+
+        document.getElementById('confirm_password').addEventListener('input', function () {
+            var confirm_password = this.value;
+            var confirmPasswordErr = document.getElementById('confirmPasswordErr');
+            var password = document.getElementById('password').value;
+
+            if (confirm_password === "") {
+                confirmPasswordErr.textContent = "Please confirm password.";
+            } else if (confirm_password !== password) {
+                confirmPasswordErr.textContent = "Password did not match.";
+            } else {
+                confirmPasswordErr.textContent = "";
+            }
+        });
+    </script>
+
+</body>
+
+</html>
